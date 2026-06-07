@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#00C853;--g2:#00E676;--gd:#00701E;
+  --bg:#0A0A0A;--s1:#111111;--s2:#1A1A1A;
+  --b:#2A2A2A;--b2:#333333;
+  --t:#F0F0F0;--m:#888;--m2:#555;
+  --crit:#FF3333;--warn:#FFB300;--ok:#00C853;--info:#2196F3;
+  --bw:2px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);font-family:'Space Mono',monospace;color:var(--t);min-height:100vh;font-size:13px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--g);border-radius:0}
+
+/* ══════════════════════════════════
+   LOGIN
+══════════════════════════════════ */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:stretch}
+.ll{width:44%;background:var(--s1);border-right:var(--bw) solid var(--g);display:flex;flex-direction:column;justify-content:center;padding:64px 56px;position:relative;overflow:hidden}
+.ll::before{content:'CDMS';position:absolute;bottom:-40px;right:-20px;font-family:'Barlow Condensed',sans-serif;font-size:220px;font-weight:800;color:var(--g);opacity:.04;line-height:1;pointer-events:none}
+@media(max-width:700px){.ll{display:none}}
+.l-eyebrow{font-size:10px;letter-spacing:3px;color:var(--g);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.l-eyebrow::before{content:'';display:inline-block;width:24px;height:2px;background:var(--g)}
+.l-brand{font-family:'Barlow Condensed',sans-serif;font-size:80px;font-weight:800;line-height:.9;color:var(--t);letter-spacing:-2px}
+.l-brand span{color:var(--g);display:block}
+.l-desc{margin-top:32px;font-size:12px;color:var(--m);line-height:1.8;max-width:320px;border-left:3px solid var(--g);padding-left:16px}
+.l-stats{margin-top:48px;display:flex;gap:0;border:var(--bw) solid var(--b)}
+.lst{flex:1;padding:16px 20px;border-right:var(--bw) solid var(--b)}
+.lst:last-child{border-right:none}
+.lst-v{font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:700;color:var(--g);line-height:1}
+.lst-l{font-size:9px;letter-spacing:2px;color:var(--m);text-transform:uppercase;margin-top:2px}
+.lr{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 40px}
+.lbox{width:100%;max-width:360px}
+.ltabs{display:flex;border-bottom:var(--bw) solid var(--b);margin-bottom:36px}
+.ltab{background:none;border:none;color:var(--m);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;padding:12px 20px;cursor:pointer;text-transform:uppercase;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s}
+.ltab.active{color:var(--g);border-bottom-color:var(--g)}
+.lf{display:none}.lf.active{display:block}
+.l-title{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:700;letter-spacing:-1px;margin-bottom:4px}
+.l-sub{font-size:10px;color:var(--m);letter-spacing:1px;margin-bottom:28px;text-transform:uppercase}
+.hint{font-size:10px;color:var(--m2);margin-top:14px;text-align:center;letter-spacing:.5px}
+.hint span{color:var(--g)}
+
+/* ══════════════════════════════════
+   APP SHELL
+══════════════════════════════════ */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+header{background:var(--s1);border-bottom:var(--bw) solid var(--g);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100}
+.h-logo{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:2px;color:var(--t)}
+.h-logo span{color:var(--g)}
+.h-right{display:flex;align-items:center;gap:8px}
+.h-pill{border:var(--bw) solid var(--b2);padding:4px 10px;font-size:10px;color:var(--m);letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.h-user{border:var(--bw) solid var(--g);padding:4px 12px;font-size:10px;color:var(--g);letter-spacing:1px}
+.dot{width:6px;height:6px;background:var(--g);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+nav{background:var(--s1);border-bottom:var(--bw) solid var(--b);display:flex;padding:0 24px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+.nb{background:none;border:none;color:var(--m);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:12px 16px;cursor:pointer;text-transform:uppercase;border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s;white-space:nowrap}
+.nb.active{color:var(--g);border-bottom-color:var(--g)}
+.nb:hover:not(.active){color:var(--t)}
+.nb.admin-only{display:none}
+
+/* ══════════════════════════════════
+   LAYOUT
+══════════════════════════════════ */
+.page{display:none;padding:24px;animation:fi .15s ease}
+.page.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.pg-header{display:flex;align-items:baseline;gap:16px;margin-bottom:20px;padding-bottom:14px;border-bottom:var(--bw) solid var(--b)}
+.pg-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--t)}
+.pg-sub{font-size:10px;color:var(--m);letter-spacing:1px;text-transform:uppercase}
+
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:20px;border:var(--bw) solid var(--b)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.g4{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+
+/* ── STAT CARDS ── */
+.sc{padding:20px;border-right:var(--bw) solid var(--b);position:relative;overflow:hidden}
+.sc:last-child{border-right:none}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.sc.ok::after{background:var(--ok)}.sc.warn::after{background:var(--warn)}.sc.crit::after{background:var(--crit)}.sc.info::after{background:var(--info)}
+.sc-label{font-size:9px;letter-spacing:2px;color:var(--m);text-transform:uppercase;margin-bottom:10px}
+.sc-val{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:700;line-height:1;color:var(--t)}
+.sc-sub{font-size:9px;color:var(--m2);margin-top:6px;letter-spacing:.5px}
+
+/* ── PANELS ── */
+.panel{background:var(--s1);border:var(--bw) solid var(--b);padding:18px;margin-bottom:16px}
+.panel-title{font-size:9px;letter-spacing:2px;color:var(--m);text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--b)}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:460px}
+th{font-size:9px;letter-spacing:1.5px;color:var(--m);text-transform:uppercase;text-align:left;padding:8px 12px;border-bottom:var(--bw) solid var(--b);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--b);color:var(--t);font-size:11px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(0,200,83,.04)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;font-size:9px;letter-spacing:.5px;font-weight:700;white-space:nowrap;text-transform:uppercase;border:1px solid}
+.badge.ok{color:var(--ok);border-color:var(--ok);background:rgba(0,200,83,.08)}
+.badge.warn{color:var(--warn);border-color:var(--warn);background:rgba(255,179,0,.08)}
+.badge.crit{color:var(--crit);border-color:var(--crit);background:rgba(255,51,51,.08)}
+.badge.info{color:var(--info);border-color:var(--info);background:rgba(33,150,243,.08)}
+
+/* ── FORMS ── */
+.fg{margin-bottom:14px}
+label{font-size:9px;letter-spacing:1.5px;color:var(--m);text-transform:uppercase;display:block;margin-bottom:6px}
+input,select,textarea{background:var(--bg);border:var(--bw) solid var(--b2);color:var(--t);font-family:'Space Mono',monospace;font-size:11px;padding:10px 12px;width:100%;transition:.15s;appearance:none;border-radius:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 1px var(--g)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+select option{background:#111}
+textarea{resize:vertical;min-height:80px}
+
+/* ── BUTTONS ── */
+.btn{border:var(--bw) solid;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:10px 20px;text-transform:uppercase;transition:.1s;display:inline-flex;align-items:center;gap:6px;border-radius:0}
+.btn-primary{background:var(--g);border-color:var(--g);color:#000;font-weight:700}
+.btn-primary:hover{background:var(--g2);border-color:var(--g2)}
+.btn-primary:disabled{opacity:.3;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:var(--b2);color:var(--m)}
+.btn-ghost:hover{border-color:var(--g);color:var(--g)}
+.btn-danger{background:transparent;border-color:var(--crit);color:var(--crit)}
+.btn-danger:hover{background:rgba(255,51,51,.1)}
+.btn-sm{padding:6px 12px;font-size:8px}
+.action-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* ── ALERT BARS ── */
+.alert-bar{border:1px solid var(--crit);border-left:4px solid var(--crit);background:rgba(255,51,51,.05);padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.alert-bar.warn{border-color:var(--warn);border-left-color:var(--warn);background:rgba(255,179,0,.05)}
+.alert-text{font-size:11px}.alert-meta{font-size:9px;color:var(--m);margin-top:3px;letter-spacing:.5px}
+
+/* ── ZONE BARS ── */
+.zone-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)}
+.zone-row:last-child{border-bottom:none}
+.zone-name{font-size:9px;letter-spacing:1px;text-transform:uppercase;width:110px;flex-shrink:0;color:var(--m)}
+.progress-bar{flex:1;height:4px;background:var(--b2);overflow:hidden}
+.progress-fill{height:100%;transition:.4s}
+.zone-pct{font-size:9px;color:var(--m2);width:30px;text-align:right}
+
+/* ── MISC ── */
+.mono{font-family:'Space Mono',monospace;font-size:10px;color:var(--m)}
+.err-msg{border:var(--bw) solid var(--crit);background:rgba(255,51,51,.07);color:var(--crit);padding:8px 12px;font-size:11px;margin-bottom:12px;display:none;letter-spacing:.3px}
+.inline-select{padding:3px 22px 3px 6px;font-size:9px;width:auto;cursor:pointer;letter-spacing:.5px}
+.divider{height:var(--bw);background:var(--b);margin:16px 0}
+
+/* ── LOADING / EMPTY ── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--b2);border-top-color:var(--g);animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row{color:var(--m);font-size:10px;padding:24px;text-align:center;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px}
+.empty-block{text-align:center;padding:40px 20px;border:1px dashed var(--b2)}
+.empty-icon{font-size:28px;opacity:.3;margin-bottom:10px}
+.empty-label{font-size:9px;letter-spacing:2px;color:var(--m2);text-transform:uppercase}
+
+/* ── CHARTS ── */
+.chart-panel{background:var(--s1);border:var(--bw) solid var(--b);padding:18px;margin-bottom:16px}
+.chart-panel canvas{max-height:220px}
+
+/* ── REPORT CARDS ── */
+.rc{border:var(--bw) solid var(--b);border-left:4px solid var(--b2);background:var(--s1);padding:14px;margin-bottom:8px;cursor:pointer;transition:.1s}
+.rc:hover{border-color:var(--g);border-left-color:var(--g);background:rgba(0,200,83,.03)}
+.rc.sev-Critical{border-left-color:var(--crit)}
+.rc.sev-High{border-left-color:rgba(255,51,51,.5)}
+.rc.sev-Medium{border-left-color:var(--warn)}
+.rc.sev-Low{border-left-color:var(--ok)}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.rc-id{font-size:9px;color:var(--m);letter-spacing:1px}
+.rc-title{font-size:12px;font-weight:700;margin-bottom:3px;color:var(--t)}
+.rc-desc{font-size:10px;color:var(--m);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px}
+.rc-foot{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.rc-meta{font-size:9px;color:var(--m2);letter-spacing:.5px}
+
+/* ── ACTIVITY LOG ── */
+.log-row{display:grid;grid-template-columns:110px 80px 150px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--b);align-items:start}
+.log-row:last-child{border-bottom:none}
+.log-time{font-size:9px;color:var(--m2)}
+.log-user{font-size:9px;color:var(--g)}
+.log-action{font-size:9px;color:var(--t);letter-spacing:.5px}
+.log-detail{font-size:10px;color:var(--m)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--s1);border:var(--bw) solid var(--g);padding:28px;width:100%;max-width:500px;position:relative;max-height:90vh;overflow-y:auto}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--m);cursor:pointer;font-size:16px;font-family:'Space Mono',monospace;line-height:1}
+.modal-close:hover{color:var(--crit)}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;letter-spacing:-1px;color:var(--g);margin-bottom:2px}
+.modal-sub{font-size:9px;color:var(--m);letter-spacing:.5px;margin-bottom:20px;text-transform:uppercase}
+
+/* ── CONFIRM ── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;display:none;align-items:center;justify-content:center}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--s1);border:var(--bw) solid var(--crit);padding:32px;max-width:380px;width:90%;text-align:center}
+.confirm-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--crit);letter-spacing:-1px;margin-bottom:8px}
+.confirm-msg{font-size:11px;color:var(--m);margin-bottom:24px;line-height:1.7}
+.confirm-btns{display:flex;gap:10px;justify-content:center}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--g);color:#000;padding:10px 18px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;font-weight:700;transform:translateY(60px);opacity:0;transition:.2s ease;z-index:9999;max-width:300px;text-transform:uppercase}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.err{background:var(--crit);color:#fff}
+#toast.ok2{background:var(--ok);color:#000}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="ll">
+    <div class="l-eyebrow">Infrastructure Management</div>
+    <div class="l-brand">Chennai<span>Drainage</span></div>
+    <div class="l-desc">Real-time monitoring, incident reporting, and maintenance coordination for Chennai's urban drainage infrastructure.</div>
+    <div class="l-stats">
+      <div class="lst"><div class="lst-v">158</div><div class="lst-l">Drains</div></div>
+      <div class="lst"><div class="lst-v">8</div><div class="lst-l">Zones</div></div>
+      <div class="lst"><div class="lst-v">24/7</div><div class="lst-l">Live</div></div>
+    </div>
+  </div>
+  <div class="lr">
+    <div class="lbox">
+      <div class="ltabs">
+        <button class="ltab active" onclick="switchLoginTab('login',this)">Login</button>
+        <button class="ltab" onclick="switchLoginTab('register',this)">Register</button>
+      </div>
+      <div class="lf active" id="lf-login">
+        <div class="l-title">Sign In</div>
+        <div class="l-sub">Access the system</div>
+        <div class="err-msg" id="login-err"></div>
+        <div class="fg"><label>Username</label><input type="text" id="l-user" placeholder="username" autocomplete="username"></div>
+        <div class="fg"><label>Password</label><input type="password" id="l-pass" placeholder="password" autocomplete="current-password"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" id="login-btn" onclick="doLogin()">Enter System</button>
+        <div class="hint">Default admin — <span>admin</span> / <span>admin123</span></div>
+      </div>
+      <div class="lf" id="lf-register">
+        <div class="l-title">Register</div>
+        <div class="l-sub">Public access only</div>
+        <div class="err-msg" id="reg-err"></div>
+        <div class="fg"><label>Username</label><input type="text" id="r-user" placeholder="min 3 chars" autocomplete="username"></div>
+        <div class="fg"><label>Password</label><input type="password" id="r-pass" placeholder="min 6 chars" autocomplete="new-password"></div>
+        <div class="fg"><label>Confirm Password</label><input type="password" id="r-pass2" placeholder="repeat password"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" id="reg-btn" onclick="doRegister()">Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <header>
+    <div class="h-logo">CD<span>MS</span></div>
+    <div class="h-right">
+      <div class="h-pill"><span class="dot"></span>SYSTEM ONLINE</div>
+      <div class="h-pill" id="clock">--:--:--</div>
+      <div class="h-user" id="user-pill">—</div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+
+  <nav>
+    <button class="nb active" onclick="goTo('dashboard',this)">Dashboard</button>
+    <button class="nb" onclick="goTo('drains',this)">Drain Network</button>
+    <button class="nb" onclick="goTo('report',this)">Report Issue</button>
+    <button class="nb admin-only" id="nav-manage" onclick="goTo('manage',this)">Manage Reports</button>
+    <button class="nb" onclick="goTo('maintenance',this)">Maintenance</button>
+    <button class="nb" onclick="goTo('charts',this)">Analytics</button>
+    <button class="nb admin-only" onclick="goTo('activity',this)">Activity Log</button>
+    <button class="nb admin-only" onclick="goTo('admin',this)">Admin</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="pg-header">
+      <div class="pg-title">Live Overview</div>
+      <div class="pg-sub" id="last-updated">Loading...</div>
+    </div>
+    <div class="g4">
+      <div class="sc ok"><div class="sc-label">Active Drains</div><div class="sc-val" id="d-active">—</div><div class="sc-sub" id="d-sub">of — total</div></div>
+      <div class="sc crit"><div class="sc-label">Blocked</div><div class="sc-val" id="d-blocked">—</div><div class="sc-sub">immediate action</div></div>
+      <div class="sc warn"><div class="sc-label">Maintenance</div><div class="sc-val" id="d-maint">—</div><div class="sc-sub">in progress</div></div>
+      <div class="sc info"><div class="sc-label">Total Reports</div><div class="sc-val" id="d-reports">—</div><div class="sc-sub">all time</div></div>
+    </div>
+    <div class="g2">
+      <div class="panel">
+        <div class="panel-title">Active Alerts — High &amp; Critical</div>
+        <div id="alerts-list"><div class="loading-row"><span class="spinner"></span>Loading</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Blockage by Zone</div>
+        <div id="zone-bars"><div class="loading-row"><span class="spinner"></span>Loading</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Recent Incident Reports</div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>ID</th><th>Zone</th><th>Type</th><th>Severity</th><th>Status</th><th>Reporter</th><th>Time</th></tr></thead>
+        <tbody id="dash-reports"><tr><td colspan="7"><div class="loading-row"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAIN NETWORK -->
+  <div class="page" id="page-drains">
+    <div class="pg-header"><div class="pg-title">Drain Network Registry</div></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <input type="text" placeholder="Search ID, zone, type..." id="drain-search" style="max-width:240px" oninput="filterDrains()">
+      <select id="dsf" style="max-width:140px" onchange="filterDrains()">
+        <option value="">All Statuses</option><option>Active</option><option>Blocked</option><option>Maintenance</option><option>Inactive</option>
+      </select>
+      <select id="dzf" style="max-width:140px" onchange="filterDrains()"><option value="">All Zones</option></select>
+    </div>
+    <div class="panel" style="padding:0">
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Drain ID</th><th>Zone</th><th>Type</th><th>Diameter</th><th>Last Inspected</th><th>Status</th><th id="drain-action-th">Action</th></tr></thead>
+        <tbody id="drain-tbody"><tr><td colspan="7"><div class="loading-row"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT ISSUE -->
+  <div class="page" id="page-report">
+    <div class="pg-header"><div class="pg-title">Report a Drainage Issue</div></div>
+    <div class="g2">
+      <div class="panel">
+        <div class="panel-title">New Report</div>
+        <div class="err-msg" id="r-err"></div>
+        <div class="fg"><label>Zone / Area</label>
+          <select id="r-zone"><option>Adyar</option><option>Velachery</option><option>T. Nagar</option><option>Anna Nagar</option><option>Tambaram</option><option>Perambur</option><option>Kodambakkam</option><option>Mylapore</option></select>
+        </div>
+        <div class="fg"><label>Drain ID (if known)</label><input type="text" id="r-drain-id" placeholder="DR-042"></div>
+        <div class="fg"><label>Issue Type</label>
+          <select id="r-type"><option>Blockage</option><option>Overflow</option><option>Structural Damage</option><option>Odour</option><option>Flooding Risk</option><option>Debris Accumulation</option></select>
+        </div>
+        <div class="fg"><label>Severity</label>
+          <select id="r-sev"><option value="Low">Low — Minor</option><option value="Medium">Medium — Attention needed</option><option value="High" selected>High — Urgent</option><option value="Critical">Critical — Emergency</option></select>
+        </div>
+        <div class="fg"><label>Description *</label><textarea id="r-desc" placeholder="Describe the issue — location, extent, any flooding risk..."></textarea></div>
+        <div class="action-row">
+          <button class="btn btn-ghost" onclick="clearRF()">Clear</button>
+          <button class="btn btn-primary" id="r-btn" onclick="submitReport()">Submit Report</button>
+        </div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">Your Reports</div>
+          <div id="my-reports"><div class="loading-row"><span class="spinner"></span>Loading</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Status Reference</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:center"><span class="badge warn">Pending</span><span style="font-size:11px;color:var(--m)">Received, under review</span></div>
+            <div style="display:flex;gap:10px;align-items:center"><span class="badge info">In Progress</span><span style="font-size:11px;color:var(--m)">Crew dispatched</span></div>
+            <div style="display:flex;gap:10px;align-items:center"><span class="badge ok">Resolved</span><span style="font-size:11px;color:var(--m)">Fixed and verified</span></div>
+            <div style="display:flex;gap:10px;align-items:center"><span class="badge crit">Rejected</span><span style="font-size:11px;color:var(--m)">Could not be actioned</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANAGE REPORTS -->
+  <div class="page" id="page-manage">
+    <div class="pg-header"><div class="pg-title">Manage Reports</div><div class="pg-sub">Admin — verify and update all submitted reports</div></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select id="mrf-status" style="max-width:150px" onchange="filterManageReports()"><option value="">All Statuses</option><option>Pending</option><option>In Progress</option><option>Resolved</option><option>Rejected</option></select>
+      <select id="mrf-sev" style="max-width:140px" onchange="filterManageReports()"><option value="">All Severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select id="mrf-zone" style="max-width:140px" onchange="filterManageReports()"><option value="">All Zones</option></select>
+    </div>
+    <div id="manage-reports-list"><div class="loading-row"><span class="spinner"></span>Loading reports</div></div>
+  </div>
+
+  <!-- MAINTENANCE -->
+  <div class="page" id="page-maintenance">
+    <div class="pg-header"><div class="pg-title">Maintenance Logs</div></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select id="mf-type" style="max-width:180px" onchange="filterMaint()"><option value="">All Work Types</option><option>Routine Cleaning</option><option>Emergency Repair</option><option>Inspection</option><option>De-silting</option></select>
+      <select id="mf-status" style="max-width:150px" onchange="filterMaint()"><option value="">All Statuses</option><option>Scheduled</option><option>In Progress</option><option>Completed</option></select>
+    </div>
+    <div class="panel" style="padding:0;margin-bottom:16px">
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Log ID</th><th>Drain ID</th><th>Zone</th><th>Work Type</th><th>Crew</th><th>Date</th><th>Duration</th><th>Status</th></tr></thead>
+        <tbody id="maint-tbody"><tr><td colspan="8"><div class="loading-row"><span class="spinner"></span>Loading</div></td></tr></tbody></table>
+      </div>
+    </div>
+    <div class="panel" id="maint-form-panel">
+      <div class="panel-title">Schedule Maintenance</div>
+      <div class="g3">
+        <div class="fg"><label>Drain ID</label><input type="text" id="m-drain" placeholder="DR-XXX"></div>
+        <div class="fg"><label>Work Type</label><select id="m-type"><option>Routine Cleaning</option><option>Emergency Repair</option><option>Inspection</option><option>De-silting</option></select></div>
+        <div class="fg"><label>Crew</label><select id="m-crew"><option>Crew Alpha</option><option>Crew Bravo</option><option>Crew Delta</option><option>Crew Echo</option></select></div>
+      </div>
+      <div class="fg"><label>Date</label><input type="date" id="m-date" style="max-width:200px"></div>
+      <div class="action-row"><button class="btn btn-primary" onclick="scheduleMaint()">Schedule</button></div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="page" id="page-charts">
+    <div class="pg-header"><div class="pg-title">Analytics</div><div class="pg-sub">Live data from database</div></div>
+    <div class="g4" id="analytics-stats" style="margin-bottom:16px">
+      <div class="sc info" style="grid-column:1/-1"><div class="loading-row"><span class="spinner"></span>Loading analytics</div></div>
+    </div>
+    <div class="g2">
+      <div class="chart-panel"><div class="panel-title">Drain Status Breakdown</div><canvas id="chart-status"></canvas></div>
+      <div class="chart-panel"><div class="panel-title">Reports by Zone</div><canvas id="chart-zone"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="chart-panel"><div class="panel-title">Reports by Severity</div><canvas id="chart-sev"></canvas></div>
+      <div class="chart-panel"><div class="panel-title">Drain Type Distribution</div><canvas id="chart-type"></canvas></div>
+    </div>
+    <div class="chart-panel"><div class="panel-title">Reports Over Time — Last 7 Days</div><canvas id="chart-time" style="max-height:160px"></canvas></div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="page" id="page-activity">
+    <div class="pg-header"><div class="pg-title">Activity Log</div><div class="pg-sub">All user actions — last 100</div></div>
+    <div class="panel">
+      <div id="activity-list"><div class="loading-row"><span class="spinner"></span>Loading</div></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page" id="page-admin">
+    <div class="pg-header"><div class="pg-title">Admin Panel</div></div>
+    <div class="g2">
+      <div class="panel">
+        <div class="panel-title">Add Drain to Registry</div>
+        <div class="err-msg" id="a-err"></div>
+        <div class="fg"><label>Drain ID</label><input type="text" id="a-id" placeholder="DR-016"></div>
+        <div class="fg"><label>Zone</label><select id="a-zone"><option>Adyar</option><option>Velachery</option><option>T. Nagar</option><option>Anna Nagar</option><option>Tambaram</option><option>Perambur</option><option>Kodambakkam</option><option>Mylapore</option></select></div>
+        <div class="fg"><label>Type</label><select id="a-type"><option>Storm Drain</option><option>Combined Sewer</option><option>Surface Channel</option><option>Box Culvert</option></select></div>
+        <div class="fg"><label>Diameter (mm)</label><input type="number" id="a-diam" placeholder="600" min="100" max="3000"></div>
+        <div class="action-row"><button class="btn btn-primary" onclick="addDrain()">Add Drain</button></div>
+      </div>
+      <div>
+        <div class="panel">
+          <div class="panel-title">Registered Users</div>
+          <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Username</th><th>Role</th><th>Joined</th></tr></thead><tbody id="users-tbody"><tr><td colspan="4"><div class="loading-row"><span class="spinner"></span></div></td></tr></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Data Operations</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-ghost" style="justify-content:center;width:100%" onclick="exportData()">Export JSON Backup</button>
+            <button class="btn btn-danger" style="justify-content:center;width:100%" onclick="confirmClear()">Reset All Operational Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modal-title">—</div>
+    <div class="modal-sub" id="modal-sub">—</div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Confirm Action</div>
+    <div class="confirm-msg" id="confirm-msg">This cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let ALL_DRAINS=[],ALL_REPORTS=[],ALL_MAINT=[];
+let CURRENT_USER=null,CURRENT_ROLE=null;
+let CHARTS={};
+
+// ── AUTH ──
+function switchLoginTab(tab,btn){
+  document.querySelectorAll('.ltab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.lf').forEach(f=>f.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('lf-'+tab).classList.add('active');
+}
+async function doLogin(){
+  const u=document.getElementById('l-user').value.trim();
+  const p=document.getElementById('l-pass').value;
+  if(!u||!p){showErr('login-err','Enter username and password.');return;}
+  showErr('login-err','');
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Authenticating...';
+  try{
+    const res=await api('/auth/login',{method:'POST',body:JSON.stringify({username:u,password:p})});
+    if(res.error){showErr('login-err',res.error);btn.disabled=false;btn.textContent='Enter System';return;}
+    CURRENT_USER=res.username;CURRENT_ROLE=res.role;enterApp();
+  }catch(e){showErr('login-err','Connection error — is the server running?');btn.disabled=false;btn.textContent='Enter System';}
+}
+async function doRegister(){
+  const u=document.getElementById('r-user').value.trim();
+  const p=document.getElementById('r-pass').value;
+  const p2=document.getElementById('r-pass2').value;
+  showErr('reg-err','');
+  if(!u||!p){showErr('reg-err','All fields required.');return;}
+  if(p!==p2){showErr('reg-err','Passwords do not match.');return;}
+  const btn=document.getElementById('reg-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Creating...';
+  try{
+    const res=await api('/auth/register',{method:'POST',body:JSON.stringify({username:u,password:p})});
+    if(res.error){showErr('reg-err',res.error);btn.disabled=false;btn.textContent='Create Account';return;}
+    CURRENT_USER=res.username;CURRENT_ROLE=res.role;enterApp();
+  }catch(e){showErr('reg-err','Registration failed.');btn.disabled=false;btn.textContent='Create Account';}
+}
+async function doLogout(){
+  await api('/auth/logout',{method:'POST'}).catch(()=>{});
+  CURRENT_USER=null;CURRENT_ROLE=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-pass').value='';
+  showErr('login-err','');
+}
+function enterApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('app').style.flexDirection='column';
+  const roleTag=CURRENT_ROLE==='admin'?' [ADMIN]':'';
+  document.getElementById('user-pill').textContent=CURRENT_USER.toUpperCase()+roleTag;
+  document.querySelectorAll('.admin-only').forEach(el=>{
+    el.style.display=CURRENT_ROLE==='admin'?'inline-block':'none';
+  });
+  document.getElementById('nav-manage').style.display=CURRENT_ROLE==='admin'?'inline-block':'none';
+  if(CURRENT_ROLE!=='admin'){
+    const mp=document.getElementById('maint-form-panel');if(mp)mp.style.display='none';
+    const th=document.getElementById('drain-action-th');if(th)th.style.display='none';
+  }
+  loadAll();tick();
+}
+
+// ── API ──
+async function api(path,opts={}){
+  const res=await fetch(path,{credentials:'include',headers:{'Content-Type':'application/json'},...opts});
+  return res.json();
+}
+async function loadAll(){
+  try{
+    const [d,r,m]=await Promise.all([api('/drains'),api('/reports'),api('/maintenance')]);
+    if(!d.error)ALL_DRAINS=d;
+    if(!r.error)ALL_REPORTS=r;
+    if(!m.error)ALL_MAINT=m;
+  }catch(e){}
+  renderAll();
+  document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-IN',{hour12:false});
+}
+function renderAll(){renderDash();renderDrains();filterMaint();renderMyReports();populateZoneFilters();}
+
+// ── HELPERS ──
+function bdg(s){
+  const m={Active:'ok',Blocked:'crit',Maintenance:'info',Inactive:'warn',Pending:'warn','In Progress':'info',Completed:'ok',Scheduled:'warn',Resolved:'ok',Rejected:'crit',Critical:'crit',High:'crit',Medium:'warn',Low:'ok',admin:'info',public:'ok'};
+  return `<span class="badge ${m[s]||'warn'}">${s}</span>`;
+}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show'+(type?' '+type:'');
+  setTimeout(()=>t.className='',2800);
+}
+function showErr(id,msg){
+  const e=document.getElementById(id);if(!e)return;
+  e.textContent=msg;e.style.display=msg?'block':'none';
+}
+function emptyBlock(icon,label){
+  return `<div class="empty-block"><div class="empty-icon">${icon}</div><div class="empty-label">${label}</div></div>`;
+}
+function goTo(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='charts')renderCharts();
+  if(name==='activity')renderActivity();
+  if(name==='admin')renderAdmin();
+  if(name==='manage')renderManageReports();
+}
+
+// ── DASHBOARD ──
+function renderDash(){
+  const active=ALL_DRAINS.filter(d=>d.status==='Active').length;
+  const blocked=ALL_DRAINS.filter(d=>d.status==='Blocked').length;
+  const maint=ALL_DRAINS.filter(d=>d.status==='Maintenance').length;
+  document.getElementById('d-active').textContent=active;
+  document.getElementById('d-sub').textContent='of '+ALL_DRAINS.length+' total';
+  document.getElementById('d-blocked').textContent=blocked;
+  document.getElementById('d-maint').textContent=maint;
+  document.getElementById('d-reports').textContent=ALL_REPORTS.length;
+
+  const crits=ALL_REPORTS.filter(r=>r.severity==='Critical'||r.severity==='High');
+  document.getElementById('alerts-list').innerHTML=crits.length
+    ? crits.slice(0,5).map(r=>`<div class="alert-bar ${r.severity==='High'?'warn':''}">
+        <div>
+          <div class="alert-text">${r.zone} — ${r.type}</div>
+          <div class="alert-meta">${r.created_at} · ${r.drain_id||'—'} · ${r.reporter}</div>
+        </div>
+        ${bdg(r.severity)}</div>`).join('')
+    : emptyBlock('✓','No active high-severity alerts');
+
+  const zones=['Adyar','Velachery','T. Nagar','Anna Nagar','Tambaram','Perambur','Mylapore','Kodambakkam'];
+  document.getElementById('zone-bars').innerHTML=zones.map(z=>{
+    const tot=ALL_DRAINS.filter(d=>d.zone===z).length||1;
+    const blk=ALL_DRAINS.filter(d=>d.zone===z&&d.status==='Blocked').length;
+    const pct=Math.round((blk/tot)*100);
+    const col=pct>60?'var(--crit)':pct>25?'var(--warn)':'var(--ok)';
+    return `<div class="zone-row">
+      <div class="zone-name">${z}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div class="zone-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('dash-reports').innerHTML=ALL_REPORTS.slice(0,8).map(r=>`
+    <tr><td class="mono">${r.id}</td><td>${r.zone}</td><td>${r.type}</td>
+    <td>${bdg(r.severity)}</td><td>${bdg(r.status)}</td>
+    <td class="mono">${r.reporter}</td>
+    <td class="mono">${r.created_at}</td></tr>`).join('')
+    ||`<tr><td colspan="7">${emptyBlock('—','No reports yet')}</td></tr>`;
+}
+
+// ── DRAINS ──
+function populateZoneFilters(){
+  const zones=[...new Set(ALL_DRAINS.map(d=>d.zone))].sort();
+  const opts='<option value="">All Zones</option>'+zones.map(z=>`<option>${z}</option>`).join('');
+  document.getElementById('dzf').innerHTML=opts;
+  document.getElementById('mrf-zone').innerHTML=opts;
+}
+function filterDrains(){
+  const q=document.getElementById('drain-search').value.toLowerCase();
+  const st=document.getElementById('dsf').value;
+  const zn=document.getElementById('dzf').value;
+  renderDrainTable(ALL_DRAINS.filter(d=>
+    (!q||(d.id+d.zone+d.type).toLowerCase().includes(q))&&
+    (!st||d.status===st)&&(!zn||d.zone===zn)));
+}
+function renderDrains(){filterDrains();}
+function renderDrainTable(arr){
+  const isAdmin=CURRENT_ROLE==='admin';
+  document.getElementById('drain-tbody').innerHTML=arr.length
+    ? arr.map(d=>`<tr>
+        <td class="mono">${d.id}</td><td>${d.zone}</td>
+        <td style="color:var(--m)">${d.type}</td>
+        <td class="mono">${d.diameter}mm</td>
+        <td class="mono">${d.inspected}</td>
+        <td>${bdg(d.status)}</td>
+        <td>${isAdmin?`<select class="inline-select" onchange="updateDrainStatus('${d.id}',this.value)">
+          ${['Active','Blocked','Maintenance','Inactive'].map(s=>`<option ${s===d.status?'selected':''}>${s}</option>`).join('')}
+        </select>`:'—'}</td></tr>`).join('')
+    : `<tr><td colspan="7">${emptyBlock('—','No drains match filters')}</td></tr>`;
+}
+async function updateDrainStatus(id,status){
+  const res=await api('/drains/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({status})});
+  if(res.error){toast(res.error,'err');return;}
+  const d=ALL_DRAINS.find(x=>x.id===id);if(d)d.status=status;
+  toast(id+' → '+status,'ok2');renderDash();
+}
+
+// ── REPORT SUBMIT ──
+async function submitReport(){
+  const desc=document.getElementById('r-desc').value.trim();
+  if(!desc){showErr('r-err','Description is required.');return;}
+  showErr('r-err','');
+  const btn=document.getElementById('r-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Submitting...';
+  const payload={
+    zone:document.getElementById('r-zone').value,
+    drainId:document.getElementById('r-drain-id').value.trim()||'Unknown',
+    type:document.getElementById('r-type').value,
+    severity:document.getElementById('r-sev').value,
+    desc
+  };
+  const res=await api('/reports',{method:'POST',body:JSON.stringify(payload)});
+  btn.disabled=false;btn.textContent='Submit Report';
+  if(res.error){toast(res.error,'err');return;}
+  toast(res.id+' submitted','ok2');clearRF();await loadAll();
+}
+function clearRF(){
+  ['r-drain-id','r-desc'].forEach(i=>document.getElementById(i).value='');
+  showErr('r-err','');
+}
+function renderMyReports(){
+  const list=CURRENT_ROLE==='admin'?ALL_REPORTS:ALL_REPORTS.filter(r=>r.reporter===CURRENT_USER);
+  document.getElementById('my-reports').innerHTML=list.length
+    ? list.slice(0,6).map(r=>`
+        <div style="padding:10px 0;border-bottom:1px solid var(--b)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span class="mono">${r.id}</span>
+            <div style="display:flex;gap:5px">${bdg(r.severity)}${bdg(r.status)}</div>
+          </div>
+          <div style="font-size:12px">${r.zone} — ${r.type}</div>
+          ${r.admin_note?`<div style="font-size:10px;color:var(--ok);margin-top:4px;border-left:2px solid var(--ok);padding-left:8px">${r.admin_note}</div>`:''}
+          <div class="mono" style="margin-top:4px">${r.created_at}</div>
+        </div>`).join('')
+    : emptyBlock('—','No reports submitted yet');
+}
+
+// ── MANAGE REPORTS ──
+function filterManageReports(){
+  const st=document.getElementById('mrf-status').value;
+  const sv=document.getElementById('mrf-sev').value;
+  const zn=document.getElementById('mrf-zone').value;
+  renderManageList(ALL_REPORTS.filter(r=>
+    (!st||r.status===st)&&(!sv||r.severity===sv)&&(!zn||r.zone===zn)));
+}
+function renderManageReports(){filterManageReports();}
+function renderManageList(arr){
+  document.getElementById('manage-reports-list').innerHTML=arr.length
+    ? arr.map(r=>`
+        <div class="rc sev-${r.severity}" onclick="openReportModal('${r.id}')">
+          <div class="rc-top">
+            <span class="rc-id">${r.id}</span>
+            <div style="display:flex;gap:5px">${bdg(r.severity)}${bdg(r.status)}</div>
+          </div>
+          <div class="rc-title">${r.zone} — ${r.type}</div>
+          <div class="rc-desc">${r.description}</div>
+          <div class="rc-foot">
+            <span class="rc-meta">Reporter: ${r.reporter}</span>
+            <span class="rc-meta">${r.created_at}</span>
+            ${r.drain_id&&r.drain_id!=='Unknown'?`<span class="rc-meta">Drain: ${r.drain_id}</span>`:''}
+            ${r.admin_note?`<span style="font-size:9px;color:var(--ok);letter-spacing:.5px">NOTE ADDED</span>`:''}
+          </div>
+        </div>`).join('')
+    : emptyBlock('—','No reports match current filters');
+}
+function openReportModal(id){
+  const r=ALL_REPORTS.find(x=>x.id===id);if(!r)return;
+  document.getElementById('modal-title').textContent=r.id+' — '+r.type;
+  document.getElementById('modal-sub').textContent=r.zone+' · '+r.created_at+' · '+r.reporter;
+  document.getElementById('modal-body').innerHTML=`
+    <div style="background:var(--bg);border:1px solid var(--b);padding:14px;margin-bottom:16px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">${bdg(r.severity)}${bdg(r.status)}</div>
+      <div style="font-size:12px;color:var(--m);line-height:1.7">${r.description}</div>
+      ${r.drain_id&&r.drain_id!=='Unknown'?`<div class="mono" style="margin-top:8px">Drain: ${r.drain_id}</div>`:''}
+    </div>
+    <div class="fg"><label>Update Status</label>
+      <select id="modal-status">
+        ${['Pending','In Progress','Resolved','Rejected'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label>Admin Note (visible to reporter)</label>
+      <textarea id="modal-note" placeholder="Add update for reporter...">${r.admin_note||''}</textarea>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReport('${r.id}')">Save Changes</button>
+    </div>`;
+  document.getElementById('report-modal').classList.add('open');
+}
+async function saveReport(id){
+  const status=document.getElementById('modal-status').value;
+  const note=document.getElementById('modal-note').value.trim();
+  const res=await api('/reports/'+id,{method:'PATCH',body:JSON.stringify({status,admin_note:note})});
+  if(res.error){toast(res.error,'err');return;}
+  toast(id+' updated','ok2');closeModal();await loadAll();renderManageReports();
+}
+function closeModal(){document.getElementById('report-modal').classList.remove('open');}
+
+// ── MAINTENANCE ──
+function filterMaint(){
+  const t=document.getElementById('mf-type').value;
+  const s=document.getElementById('mf-status').value;
+  const arr=ALL_MAINT.filter(m=>(!t||m.work_type===t)&&(!s||m.status===s));
+  document.getElementById('maint-tbody').innerHTML=arr.length
+    ? arr.map(m=>`<tr>
+        <td class="mono">${m.id}</td><td class="mono">${m.drain_id}</td>
+        <td>${m.zone}</td><td>${m.work_type}</td>
+        <td style="color:var(--m)">${m.crew}</td>
+        <td class="mono">${m.scheduled_date}</td>
+        <td class="mono">${m.duration}</td>
+        <td>${bdg(m.status)}</td></tr>`).join('')
+    : `<tr><td colspan="8">${emptyBlock('—','No logs match filters')}</td></tr>`;
+}
+async function scheduleMaint(){
+  const did=document.getElementById('m-drain').value.trim().toUpperCase();
+  const date=document.getElementById('m-date').value;
+  if(!did){toast('Enter a Drain ID','err');return;}
+  if(!date){toast('Select a date','err');return;}
+  const drain=ALL_DRAINS.find(d=>d.id===did);
+  const payload={drain_id:did,zone:drain?drain.zone:'Unknown',
+    work_type:document.getElementById('m-type').value,
+    crew:document.getElementById('m-crew').value,scheduled_date:date};
+  const res=await api('/maintenance',{method:'POST',body:JSON.stringify(payload)});
+  if(res.error){toast(res.error,'err');return;}
+  toast(res.id+' scheduled','ok2');
+  document.getElementById('m-drain').value='';document.getElementById('m-date').value='';
+  await loadAll();filterMaint();
+}
+
+// ── CHARTS ──
+const CD={
+  plugins:{legend:{labels:{color:'#888',font:{family:"'Space Mono'",size:9}}}},
+  scales:{x:{ticks:{color:'#555',font:{family:"'Space Mono'",size:8}},grid:{color:'rgba(42,42,42,.8)'}},
+           y:{ticks:{color:'#555',font:{family:"'Space Mono'",size:8}},grid:{color:'rgba(42,42,42,.8)'}}}
+};
+function mkChart(id,type,data,opts={}){
+  if(CHARTS[id])CHARTS[id].destroy();
+  CHARTS[id]=new Chart(document.getElementById(id).getContext('2d'),
+    {type,data,options:{...CD,...opts,plugins:{...CD.plugins,...(opts.plugins||{})}}});
+}
+async function renderCharts(){
+  const data=await api('/analytics');
+  if(data.error)return;
+  const t=data.totals;
+  document.getElementById('analytics-stats').innerHTML=`
+    <div class="sc info"><div class="sc-label">Total Drains</div><div class="sc-val">${t.drains}</div><div class="sc-sub">in registry</div></div>
+    <div class="sc ok"><div class="sc-label">Total Reports</div><div class="sc-val">${t.reports}</div><div class="sc-sub">all time</div></div>
+    <div class="sc warn"><div class="sc-label">Maintenance</div><div class="sc-val">${t.maintenance}</div><div class="sc-sub">jobs logged</div></div>
+    <div class="sc crit"><div class="sc-label">Users</div><div class="sc-val">${t.users}</div><div class="sc-sub">registered</div></div>`;
+  const C=['#00C853','#2196F3','#FFB300','#FF3333','#E8730A','#888','#7BC67E','#6AABDF'];
+  const dOpts={plugins:{legend:{position:'bottom',labels:{color:'#888',font:{family:"'Space Mono'",size:9},padding:10}}},scales:{}};
+  const sd=data.status_breakdown;
+  mkChart('chart-status','doughnut',{labels:Object.keys(sd),datasets:[{data:Object.values(sd),backgroundColor:C,borderWidth:0,hoverOffset:4}]},dOpts);
+  mkChart('chart-zone','bar',{labels:data.reports_by_zone.labels,datasets:[{label:'Reports',data:data.reports_by_zone.values,backgroundColor:'rgba(0,200,83,.6)',borderColor:'#00C853',borderWidth:1}]});
+  const sevC={Critical:'#FF3333',High:'rgba(255,51,51,.5)',Medium:'#FFB300',Low:'#00C853'};
+  const svd=data.reports_by_severity;
+  mkChart('chart-sev','doughnut',{labels:Object.keys(svd),datasets:[{data:Object.values(svd),backgroundColor:Object.keys(svd).map(k=>sevC[k]||'#888'),borderWidth:0,hoverOffset:4}]},dOpts);
+  mkChart('chart-type','bar',{labels:data.drain_types.labels,datasets:[{label:'Count',data:data.drain_types.values,backgroundColor:'rgba(33,150,243,.6)',borderColor:'#2196F3',borderWidth:1}]});
+  mkChart('chart-time','line',{labels:data.reports_over_time.labels,datasets:[{label:'Reports',data:data.reports_over_time.values,borderColor:'#00C853',backgroundColor:'rgba(0,200,83,.07)',borderWidth:2,pointBackgroundColor:'#00C853',pointRadius:4,tension:.3,fill:true}]},{plugins:{legend:{display:false}}});
+}
+
+// ── ACTIVITY ──
+async function renderActivity(){
+  const logs=await api('/activity_log');
+  if(logs.error){document.getElementById('activity-list').innerHTML=emptyBlock('✕','Access denied');return;}
+  document.getElementById('activity-list').innerHTML=logs.length
+    ? logs.map(l=>`<div class="log-row">
+        <div class="log-time">${l.logged_at}</div>
+        <div class="log-user">${l.user}</div>
+        <div class="log-action">${l.action}</div>
+        <div class="log-detail">${l.target?l.target+' — ':''} ${l.detail}</div>
+      </div>`).join('')
+    : emptyBlock('—','No activity yet');
+}
+
+// ── ADMIN ──
+async function renderAdmin(){
+  const users=await api('/users');
+  if(!users.error){
+    document.getElementById('users-tbody').innerHTML=users.map(u=>`
+      <tr><td class="mono">${u.id}</td><td>${u.username}</td>
+      <td>${bdg(u.role)}</td><td class="mono">${u.created_at}</td></tr>`).join('');
+  }
+}
+async function addDrain(){
+  const id=document.getElementById('a-id').value.trim().toUpperCase();
+  const zone=document.getElementById('a-zone').value;
+  const type=document.getElementById('a-type').value;
+  const diam=parseInt(document.getElementById('a-diam').value)||600;
+  if(!id){showErr('a-err','Drain ID is required.');return;}
+  showErr('a-err','');
+  const res=await api('/drains',{method:'POST',body:JSON.stringify({id,zone,type,diameter:diam})});
+  if(res.error){showErr('a-err',res.error);return;}
+  toast(id+' added','ok2');
+  document.getElementById('a-id').value='';document.getElementById('a-diam').value='';
+  await loadAll();
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify({drains:ALL_DRAINS,reports:ALL_REPORTS,maintenance:ALL_MAINT,exported:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='cdms_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  toast('Exported','ok2');
+}
+function confirmClear(){
+  showConfirm('This will permanently delete all drains, reports, and maintenance records. Users will be kept.',async()=>{
+    const res=await api('/reset',{method:'DELETE'});
+    if(res.error){toast(res.error,'err');return;}
+    toast('Database cleared','ok2');await loadAll();
+  });
+}
+
+// ── CONFIRM ──
+function showConfirm(msg,cb){
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-ok-btn').onclick=()=>{closeConfirm();cb();};
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');}
+
+// ── CLOCK ──
+function tick(){
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour12:false});
+  setTimeout(tick,1000);
+}
+
+// ── INIT ──
+(async()=>{
+  const me=await api('/auth/me').catch(()=>({username:null}));
+  if(me.username){CURRENT_USER=me.username;CURRENT_ROLE=me.role;enterApp();}
+})();
+document.getElementById('m-date').value=new Date(Date.now()+86400000).toISOString().slice(0,10);
+document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('l-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('report-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('confirm-overlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConfirm();});
+</script>
+</body>
+</html>
