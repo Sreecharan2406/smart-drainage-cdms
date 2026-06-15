@@ -198,4 +198,4 @@ MIT — free to use, modify, and distribute.
 
 ---
 
-Built by Rajanikanth Sreecharan
+Built by Sreecharan R
